@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Load Scanning - Paint Line</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; margin: 20px; }
+        h2 { background-color: #004080; color: white; padding: 10px; } /* Darker Blue */
+        h3 { font-size: 20px; margin-top: 5px; }
+        .hidden { display: none; } 
+        table { width: 60%; margin: 20px auto; border-collapse: collapse; background-color: white; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .input-cell { background-color: #ffffcc; text-align: center; width: 150px; font-size: 16px; }
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; font-size: 24px; } 
+        #scanMessage { margin-top: 20px; font-size: 28px; font-weight: bold; } 
+        .button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; background-color: #004080; color: white; border: none; } /* Darker Blue */
+        .button:hover { background-color: #002D5A; } /* Even Darker Blue for Hover */
+    </style>
+</head>
+<body>
+
+   <!-- ✅ PLATFORM SELECTION SCREEN -->
+<div id="userSelectionScreen">
+    <!-- ✅ New Title Above Everything -->
+    <h2>Roseville Production Building I</h2>
+
+    <!-- ✅ Add image -->
+    <img src="https://lh3.googleusercontent.com/d/1xRLuEF67gw8aST0g702xuH924SsoYVeA" 
+     alt="Selection Image" style="width: 50%; margin: 15px auto; display: block; border-radius: 10px;">
+
+    <!-- ✅ "Select Platform" Title (Moved Below Image) -->
+    <h2>Select Platform</h2>
+
+    <button class="button" onclick="selectUser('Platform 1')">User 1: Platform 1</button>
+    <button class="button" onclick="selectUser('Platform 2')">User 2: Platform 2</button>
+</div>
+
+    <!-- ✅ MAIN SCANNING SCREEN -->
+    <div id="scanningScreen" class="hidden">
+        <h2>LOAD SCANNING</h2>
+        <h3 id="currentDate"></h3> 
+        <h3 id="selectedPlatform"></h3> 
+
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Part Number</th>
+                    <th>Scanning Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Loading Part</td>
+                    <td><input type="text" id="C11" class="input-cell" onchange="validateC11()" autofocus></td>
+                    <td id="D11" class="error"></td>
+                </tr>
+                <tr>
+                    <td>Quantity</td>
+                    <td><input type="text" id="C12" class="input-cell" onchange="validateC12()" disabled></td>
+                    <td id="D12" class="error"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p id="scanMessage"></p>
+    </div>
+
+    <script>
+   const API_URL = "https://long-water-d01a.egarcia-b89.workers.dev/?url=https://script.google.com/macros/s/AKfycbxjx4bjGsVBsPBemVLB-rFuPwu40NbCb-aCiAiTPiSQ6t7f3fkurJiO7UpY8qh8fGwO/exec";
+    let selectedPlatform = ""; 
+
+    function selectUser(platform) {
+        selectedPlatform = platform; 
+        document.getElementById("selectedPlatform").innerHTML = `🔹 Platform: <b>${platform}</b>`;
+        document.getElementById("userSelectionScreen").classList.add("hidden");
+        document.getElementById("scanningScreen").classList.remove("hidden");
+        updateDateAndShift();
+
+        // ✅ Set focus automatically to the Part Number field
+        setTimeout(() => {
+            document.getElementById("C11").focus();
+        }, 300); 
+    }
+
+    function updateDateAndShift() {
+        const now = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        const formattedDate = now.toLocaleDateString("en-US", options);
+
+        let hours = now.getHours();
+        let minutes = now.getMinutes();
+        let shift = "";
+
+        if ((hours === 7 && minutes >= 0) || (hours > 7 && hours < 15) || (hours === 15 && minutes <= 30)) {
+            shift = "1st Shift";
+        } else if ((hours === 15 && minutes > 30) || (hours > 15 && hours < 24) || (hours === 0 && minutes <= 30)) {
+            shift = "2nd Shift";
+        } else {
+            shift = "Off Shift";
+        }
+
+        document.getElementById("currentDate").innerHTML = `📅 Date: <b>${formattedDate}</b> | 🕒 Shift: <b>${shift}</b>`;
+    }
+
+    function validateC11() {
+        let C11 = document.getElementById("C11");
+        let D11 = document.getElementById("D11");
+        let barcode = C11.value.trim();
+        let regexC11 = /^(?:\d{8}[A-Za-z]?|\d{8}-\d{2}|P\d{8}\.)$/;
+
+        if (regexC11.test(barcode)) {
+            D11.innerText = "✅ Successful Scanning";
+            D11.className = "success";
+            document.getElementById("C12").disabled = false;
+            document.getElementById("C12").focus();
+        } else {
+            D11.innerText = "❌ Invalid Barcode, Try Again";
+            D11.className = "error";
+            C11.value = "";
+            C11.focus();
+            document.getElementById("C12").disabled = true;
+        }
+    }
+
+    function validateC12() {
+        let C12 = document.getElementById("C12");
+        let D12 = document.getElementById("D12");
+        let quantity = C12.value.trim();
+
+        if (quantity.includes(".")) {
+            quantity = Math.floor(parseFloat(quantity)).toString();
+        }
+
+        let regexC12 = /^(?:\d{2}|Q\d)$/;
+
+        if (regexC12.test(quantity)) {
+            D12.innerText = "✅ Successful Entry";
+            D12.className = "success";
+            C12.value = quantity;
+            autoSubmit();
+        } else {
+            D12.innerText = "❌ Invalid Quantity, Try Again";
+            D12.className = "error";
+            C12.value = "";
+            C12.focus();
+        }
+    }
+
+    function autoSubmit() {
+        let scanMessage = document.getElementById("scanMessage");
+
+        let C11 = document.getElementById("C11").value.trim();
+        let C12 = document.getElementById("C12").value.trim();
+
+        if (C12.includes(".")) {
+            C12 = Math.floor(parseFloat(C12)).toString();
+        }
+
+        fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ "C11": C11, "C12": C12, "Platform": selectedPlatform })
+        })
+        .then(response => response.json())
+        .then(result => {
+            let timestamp = new Date().toLocaleString();
+            scanMessage.innerHTML = `✅ Scan Saved! <br> 📦 Part: <b>${C11}</b> | 🔢 Qty: <b>${C12}</b> | 🕒 ${timestamp}`;
+            scanMessage.className = "success";
+
+            // ✅ Clear input fields and validation messages
+            document.getElementById("C11").value = "";
+            document.getElementById("C12").value = "";
+            document.getElementById("D11").innerText = "";
+            document.getElementById("D12").innerText = "";
+            document.getElementById("C12").disabled = true;
+            document.getElementById("C11").focus();
+        })
+        .catch(error => console.error("Error:", error));
+    }
+</script>
+
+</body>
+</html>
